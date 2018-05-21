@@ -12,7 +12,7 @@ luarocks install table-flatten --from=http://mah0x211.github.io/rocks/
 
 ## Function
 
-### res = flatten( tbl [, maxdepth [, encoder]] )
+### res = flatten( tbl [, maxdepth [, encoder [, setter]]] )
 
 returns a flattened table.
 
@@ -21,6 +21,7 @@ returns a flattened table.
 - `tbl:table`: target table.
 - `maxdepth:number`: maximum depth to flatten. `nil` or `0` or less are unlimited. (default: `0`)
 - `encoder:function`: function that encode the `key` and `value` to the string.
+- `setter:function`: function that sets the `key` and `value` pair to result table.
 
 **Returns**
 
@@ -35,12 +36,25 @@ the declaration of the `encoder` function is as follows;
 **Parameters**
 
 - `key:string`: a key string in dot notation.
-- `val:any`: a value of key.
+- `val:any`: a value of `key`.
 
 **Returns**
 
 - `key:any`: used as a `key` of flattened table.
 - `val:any`: used as a value of `key`.
+
+
+## Setter Function
+
+the declaration of the `setter` function is as follows;
+
+### setter( res, key, val )
+
+**Parameters**
+
+- `res:table`: a result table.
+- `key:string`: a key string in dot notation.
+- `val:any`: a value of `key`.
 
 
 ## Usage
