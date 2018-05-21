@@ -30,15 +30,15 @@ local type = type
 local next = next
 local tostring = tostring
 --- constants
-local INF_POS = math.huge;
-local INF_NEG = -INF_POS;
+local INF_POS = math.huge
+local INF_NEG = -INF_POS
 
 
 --- isFinite
 -- @param n
 -- @return ok
 local function isFinite( n )
-    return type( n ) == 'number' and ( n < INF_POS and n > INF_NEG );
+    return type( n ) == 'number' and ( n < INF_POS and n > INF_NEG )
 end
 
 
@@ -53,6 +53,15 @@ local function encode( key, val )
 end
 
 
+--- setAsTable
+-- @param tbl
+-- @param key
+-- @param val
+local function setAsTable( tbl, key, val )
+    tbl[key] = val
+end
+
+
 --- _flatten
 -- @param tbl
 -- @param maxdepth
@@ -60,27 +69,28 @@ end
 -- @param depth
 -- @param prefix
 -- @param circular
+-- @param setter
 -- @param res
 -- @return res
 -- @return err
-local function _flatten( tbl, maxdepth, encoder, depth, prefix, res, circular )
+local function _flatten( tbl, maxdepth, encoder, depth, prefix, res, circular,
+                         setter )
     local k, v = next( tbl )
 
     while k do
         if type( v ) ~= 'table' then
-            local key, val = encoder( prefix .. k, v )
-            res[key] = val
+            setter( res, encoder( prefix .. k, v ) )
         else
             local ref = tostring( v )
 
             -- set value except circular referenced value
             if not circular[ref] then
                 if maxdepth > 0 and depth >= maxdepth then
-                    res[prefix .. k] = v
+                    setter( res, prefix .. k, v )
                 else
                     circular[ref] = true
                     _flatten( v, maxdepth, encoder, depth + 1,
-                              prefix .. k .. '.', res, circular )
+                              prefix .. k .. '.', res, circular, setter )
                     circular[ref] = nil
                 end
             end
@@ -97,8 +107,9 @@ end
 -- @param tbl
 -- @param maxdepth
 -- @param encoder
+-- @param setter
 -- @return res
-local function flatten( tbl, maxdepth, encoder )
+local function flatten( tbl, maxdepth, encoder, setter )
     -- veirfy arguments
     if type( tbl ) ~= 'table' then
         error( 'tbl must be table' )
@@ -117,9 +128,16 @@ local function flatten( tbl, maxdepth, encoder )
         error( 'encoder must be function' )
     end
 
+    -- use default setter
+    if setter == nil then
+        setter = setAsTable
+    elseif type( setter ) ~= 'function' then
+        error( 'setter must be function' )
+    end
+
     return _flatten( tbl, maxdepth, encoder, 1, '', {}, {
         [tostring( tbl )] = true
-    })
+    }, setter )
 end
 
 
