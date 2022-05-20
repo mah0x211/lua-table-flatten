@@ -1,0 +1,66 @@
+name: test
+
+on: [push]
+
+jobs:
+  luacheck:
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v2
+    -
+      name: Setup Lua
+      uses: leafo/gh-actions-lua@v8.0.0
+    -
+      name: Setup Luarocks
+      uses: leafo/gh-actions-luarocks@v4.0.0
+    -
+      name: Install Tools
+      run: luarocks install luacheck
+    -
+      name: Run luacheck
+      run: |
+        luacheck .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lua-version:
+          - "5.1"
+          - "5.2"
+          - "5.3"
+          - "5.4"
+          - "luajit-2.0.5"
+          - "luajit-openresty"
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v2
+    -
+      name: Setup Lua ${{ matrix.lua-version }}
+      uses: leafo/gh-actions-lua@v8.0.0
+      with:
+        luaVersion: ${{ matrix.lua-version }}
+    -
+      name: Setup Luarocks
+      uses: leafo/gh-actions-luarocks@v4
+    -
+      name: Install
+      run: |
+        luarocks make
+    -
+      name: Install Tools
+      run: |
+        luarocks install luacov
+        luarocks install assert
+    -
+      name: Run Test
+      run: |
+        lua -lluacov ./test/flatten_test.lua
+    -
+      name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        flags: unittests
