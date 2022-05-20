@@ -1,31 +1,35 @@
 # lua-table-flatten
 
+[![test](https://github.com/mah0x211/lua-table-flatten/actions/workflows/test.yml/badge.svg)](https://github.com/mah0x211/lua-table-flatten/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/mah0x211/lua-table-flatten/branch/master/graph/badge.svg)](https://codecov.io/gh/mah0x211/lua-table-flatten)
+
+
 flatten a table into a table of specified depth.
 
----
 
 ## Installation
 
 ```sh
-luarocks install table-flatten --from=http://mah0x211.github.io/rocks/
+luarocks install table-flatten
 ```
 
-## Function
+---
 
-### res = flatten( tbl [, maxdepth [, encoder [, setter]]] )
+## res = flatten( tbl [, maxdepth [, encoder [, setter]]] )
 
 returns a flattened table.
 
 **Parameters**
 
 - `tbl:table`: target table.
-- `maxdepth:number`: maximum depth to flatten. `nil` or `0` or less are unlimited. (default: `0`)
+- `maxdepth:integer`: maximum depth to flatten. `nil` or `0` or less are unlimited. (default: `0`)
 - `encoder:function`: function that encode the `key` and `value` to the string.
 - `setter:function`: function that sets the `key` and `value` pair to result table.
 
 **Returns**
 
 - `res:table`: a flattened table.
+
 
 ## Encoder Function
 
@@ -53,7 +57,7 @@ the declaration of the `setter` function is as follows;
 **Parameters**
 
 - `res:table`: a result table.
-- `key:string`: a key string in dot notation.
+- `key:string`: a key string.
 - `val:any`: a value of `key`.
 
 
@@ -94,6 +98,7 @@ end
 --     ["foo.bar.baz.coro"] = "thread: 0x0004f758",
 --     ["foo.bar.baz.str"] = "str-value",
 --     ["foo.bar.num"] = 123,
+--     ["foo.empty"] = {},
 --     ["foo.truthy"] = true,
 --     falsy = false,
 --     func = "function: 0x0004f7c8"
@@ -153,6 +158,7 @@ end
 --         str = "str-value"
 --     },
 --     ["foo.bar.num"] = 123,
+--     ["foo.empty"] = {},
 --     ["foo.truthy"] = true,
 --     falsy = false,
 --     func = "function: 0x0004f7c8"
@@ -162,6 +168,7 @@ end
 --     ["foo.bar.baz.coro"] = "thread: 0x0004f758",
 --     ["foo.bar.baz.str"] = "str-value",
 --     ["foo.bar.num"] = 123,
+--     ["foo.empty"] = {},
 --     ["foo.truthy"] = true,
 --     falsy = false,
 --     func = "function: 0x0004f7c8"

@@ -1,144 +1,147 @@
---[[
-
-  Copyright (C) 2018 Masatoshi Teruya
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-
-  flatten.lua
-  lua-table-flatten
-  Created by Masatoshi Teruya on 18/05/21.
-
---]]
+--
+-- Copyright (C) 2018-2022 Masatoshi Fukunaga
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+--
 --- file-scope variables
 local type = type
 local next = next
 local tostring = tostring
+local rawequal = rawequal
+local floor = math.floor
 --- constants
 local INF_POS = math.huge
 local INF_NEG = -INF_POS
 
-
---- isFinite
--- @param n
--- @return ok
-local function isFinite( n )
-    return type( n ) == 'number' and ( n < INF_POS and n > INF_NEG )
+--- is_integer
+--- @param n any
+--- @return boolean ok
+local function is_integer(n)
+    return type(n) == 'number' and (n < INF_POS and n > INF_NEG) and
+               rawequal(floor(n), n)
 end
 
-
---- encode
--- @param key
--- @param val
--- @return key
--- @return val
-local function encode( key, val )
+--- default_encoder
+--- @param key any
+--- @param val any
+--- @return any key
+--- @return any val
+local function default_encoder(key, val)
     -- default do-nothing
     return key, val
 end
 
-
---- setAsTable
--- @param tbl
--- @param key
--- @param val
-local function setAsTable( tbl, key, val )
-    tbl[key] = val
+--- default_setter
+--- @param tbl table
+--- @param key any
+--- @param val any
+local function default_setter(res, key, val)
+    if type(key) ~= 'string' then
+        error('key must be string')
+    end
+    res[key] = val
 end
 
-
---- _flatten
--- @param tbl
--- @param maxdepth
--- @param encoder
--- @param depth
--- @param prefix
--- @param circular
--- @param setter
--- @param res
--- @return res
--- @return err
-local function _flatten( tbl, maxdepth, encoder, depth, prefix, res, circular,
-                         setter )
-    local k, v = next( tbl )
+--- do_flatten
+--- @param tbl table
+--- @param encoder function
+--- @param setter function
+--- @param maxdepth integer
+--- @param depth integer
+--- @param prefix string
+--- @param circular table
+--- @param res table
+--- @return table res
+local function do_flatten(tbl, encoder, setter, maxdepth, depth, prefix,
+                          circular, res)
+    local k, v = next(tbl)
 
     while k do
-        if type( v ) ~= 'table' then
-            setter( res, encoder( prefix .. k, v ) )
+        local sk = k
+        if type(sk) ~= 'string' then
+            sk = tostring(sk)
+        end
+
+        if type(v) ~= 'table' then
+            setter(res, encoder(prefix .. sk, v))
         else
-            local ref = tostring( v )
+            local ref = v
 
             -- set value except circular referenced value
             if not circular[ref] then
-                if maxdepth > 0 and depth >= maxdepth then
-                    setter( res, prefix .. k, v )
+                if (maxdepth > 0 and depth >= maxdepth) then
+                    -- reached to maxdepth
+                    setter(res, encoder(prefix .. sk, v))
+                elseif not next(v) then
+                    -- empty table
+                    setter(res, encoder(prefix .. sk, v))
                 else
+                    -- flatten recursively
                     circular[ref] = true
-                    _flatten( v, maxdepth, encoder, depth + 1,
-                              prefix .. k .. '.', res, circular, setter )
+                    do_flatten(v, encoder, setter, maxdepth, depth + 1,
+                               prefix .. sk .. '.', circular, res)
                     circular[ref] = nil
                 end
             end
         end
 
-        k, v = next( tbl, k )
+        k, v = next(tbl, k)
     end
 
     return res
 end
 
-
 --- flatten
--- @param tbl
--- @param maxdepth
--- @param encoder
--- @param setter
--- @return res
-local function flatten( tbl, maxdepth, encoder, setter )
+--- @param tbl table
+--- @param maxdepth integer
+--- @param encoder function
+--- @param setter function
+--- @return table res
+local function flatten(tbl, maxdepth, encoder, setter)
     -- veirfy arguments
-    if type( tbl ) ~= 'table' then
-        error( 'tbl must be table' )
+    if type(tbl) ~= 'table' then
+        error('tbl must be table', 2)
     end
 
     if maxdepth == nil then
         maxdepth = 0
-    elseif not isFinite( maxdepth ) then
-        error( 'maxdepth must be finite number' )
+    elseif not is_integer(maxdepth) then
+        error('maxdepth must be integer', 2)
     end
 
-    -- use default encode function
+    -- use default encoder
     if encoder == nil then
-        encoder = encode
-    elseif type( encoder ) ~= 'function' then
-        error( 'encoder must be function' )
+        encoder = default_encoder
+    elseif type(encoder) ~= 'function' then
+        error('encoder must be function', 2)
     end
 
     -- use default setter
     if setter == nil then
-        setter = setAsTable
-    elseif type( setter ) ~= 'function' then
-        error( 'setter must be function' )
+        setter = default_setter
+    elseif type(setter) ~= 'function' then
+        error('setter must be function', 2)
     end
 
-    return _flatten( tbl, maxdepth, encoder, 1, '', {}, {
-        [tostring( tbl )] = true
-    }, setter )
+    return do_flatten(tbl, encoder, setter, maxdepth, 1, '', {
+        [tbl] = true,
+    }, {})
 end
-
 
 return flatten
