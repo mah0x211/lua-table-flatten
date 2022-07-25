@@ -58,45 +58,63 @@ local function default_setter(res, key, val)
     res[key] = val
 end
 
+--- default_key2str
+--- @param prefix string
+--- @param key any
+--- @return string
+local function default_key2str(prefix, key)
+    if type(key) ~= 'string' then
+        key = tostring(key)
+    end
+
+    if #prefix > 0 then
+        return prefix .. '.' .. key
+    end
+    return key
+end
+
 --- do_flatten
 --- @param tbl table
 --- @param encoder function
 --- @param setter function
+--- @param key2str function
 --- @param maxdepth integer
 --- @param depth integer
 --- @param prefix string
 --- @param circular table
 --- @param res table
 --- @return table res
-local function do_flatten(tbl, encoder, setter, maxdepth, depth, prefix,
-                          circular, res)
+local function do_flatten(tbl, encoder, setter, key2str, maxdepth, depth,
+                          prefix, circular, res)
     local k, v = next(tbl)
 
     while k do
-        local sk = k
-        if type(sk) ~= 'string' then
-            sk = tostring(sk)
-        end
+        local key = key2str(prefix, k)
+        if key then
+            if type(key) ~= 'string' then
+                error('key2str must returns a string')
+            end
 
-        if type(v) ~= 'table' then
-            setter(res, encoder(prefix .. sk, v))
-        else
-            local ref = v
+            if type(v) ~= 'table' then
+                setter(res, encoder(key, v))
+            else
+                local ref = v
 
-            -- set value except circular referenced value
-            if not circular[ref] then
-                if (maxdepth > 0 and depth >= maxdepth) then
-                    -- reached to maxdepth
-                    setter(res, encoder(prefix .. sk, v))
-                elseif not next(v) then
-                    -- empty table
-                    setter(res, encoder(prefix .. sk, v))
-                else
-                    -- flatten recursively
-                    circular[ref] = true
-                    do_flatten(v, encoder, setter, maxdepth, depth + 1,
-                               prefix .. sk .. '.', circular, res)
-                    circular[ref] = nil
+                -- set value except circular referenced value
+                if not circular[ref] then
+                    if (maxdepth > 0 and depth >= maxdepth) then
+                        -- reached to maxdepth
+                        setter(res, encoder(key, v))
+                    elseif not next(v) then
+                        -- empty table
+                        setter(res, encoder(key, v))
+                    else
+                        -- flatten recursively
+                        circular[ref] = true
+                        do_flatten(v, encoder, setter, key2str, maxdepth,
+                                   depth + 1, key, circular, res)
+                        circular[ref] = nil
+                    end
                 end
             end
         end
@@ -112,8 +130,9 @@ end
 --- @param maxdepth integer
 --- @param encoder function
 --- @param setter function
+--- @param key2str function
 --- @return table res
-local function flatten(tbl, maxdepth, encoder, setter)
+local function flatten(tbl, maxdepth, encoder, setter, key2str)
     -- veirfy arguments
     if type(tbl) ~= 'table' then
         error('tbl must be table', 2)
@@ -125,21 +144,28 @@ local function flatten(tbl, maxdepth, encoder, setter)
         error('maxdepth must be integer', 2)
     end
 
-    -- use default encoder
+    -- use default encoder function
     if encoder == nil then
         encoder = default_encoder
     elseif type(encoder) ~= 'function' then
         error('encoder must be function', 2)
     end
 
-    -- use default setter
+    -- use default setter function
     if setter == nil then
         setter = default_setter
     elseif type(setter) ~= 'function' then
         error('setter must be function', 2)
     end
 
-    return do_flatten(tbl, encoder, setter, maxdepth, 1, '', {
+    -- use default key2str function
+    if key2str == nil then
+        key2str = default_key2str
+    elseif type(key2str) ~= 'function' then
+        error('key2str must be function', 2)
+    end
+
+    return do_flatten(tbl, encoder, setter, key2str, maxdepth, 1, '', {
         [tbl] = true,
     }, {})
 end
