@@ -86,6 +86,10 @@ assert.match(err, 'encoder must be function')
 err = assert.throws(flatten, {}, nil, nil, true)
 assert.match(err, 'setter must be function')
 
+-- test that throws error if key2str is not function
+err = assert.throws(flatten, {}, nil, nil, nil, true)
+assert.match(err, 'key2str must be function')
+
 -- test that throws error if encoder returns non-string key
 err = assert.throws(flatten, {
     foo = {
@@ -94,4 +98,14 @@ err = assert.throws(flatten, {
 }, nil, function()
 end)
 assert.match(err, 'key must be string')
+
+-- test that throws error if key2str returns non-string key
+err = assert.throws(flatten, {
+    foo = {
+        bar = 'baz',
+    },
+}, nil, nil, nil, function()
+    return true
+end)
+assert.match(err, 'key2str must returns a string')
 

@@ -15,7 +15,7 @@ luarocks install table-flatten
 
 ---
 
-## res = flatten( tbl [, maxdepth [, encoder [, setter]]] )
+## res = flatten( tbl [, maxdepth [, encoder [, setter [, key2str]]]] )
 
 returns a flattened table.
 
@@ -25,13 +25,14 @@ returns a flattened table.
 - `maxdepth:integer`: maximum depth to flatten. `nil` or `0` or less are unlimited. (default: `0`)
 - `encoder:function`: function that encode the `key` and `value` to the string.
 - `setter:function`: function that sets the `key` and `value` pair to result table.
+- `key2str:function`: function that generates `key` from table-name/field-key pair.
 
 **Returns**
 
 - `res:table`: a flattened table.
 
 
-## Encoder Function
+## encoder function
 
 the declaration of the `encoder` function is as follows;
 
@@ -48,7 +49,7 @@ the declaration of the `encoder` function is as follows;
 - `val:any`: used as a value of `key`.
 
 
-## Setter Function
+## setter function
 
 the declaration of the `setter` function is as follows;
 
@@ -59,6 +60,22 @@ the declaration of the `setter` function is as follows;
 - `res:table`: a result table.
 - `key:string`: a key string.
 - `val:any`: a value of `key`.
+
+
+## key2str function
+
+the declaration of the `key2str` function is as follows;
+
+### key = key2str( tname, key )
+
+**Parameters**
+
+- `tname:string`: a table name.
+- `key:any`: a key.
+
+**Returns**
+
+- `key:string?`: used as a `key` of current field. if `nil`, ignore the field-value.
 
 
 ## Usage
