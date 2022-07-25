@@ -70,7 +70,7 @@ the declaration of the `key2str` function is as follows;
 
 **Parameters**
 
-- `tname:string`: a table name.
+- `tname:string`: a table name, or `nil` if a root table.
 - `key:any`: a key.
 
 **Returns**
