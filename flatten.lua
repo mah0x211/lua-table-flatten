@@ -59,7 +59,7 @@ local function default_setter(res, key, val)
 end
 
 --- default_key2str
---- @param prefix string
+--- @param prefix? string
 --- @param key any
 --- @return string
 local function default_key2str(prefix, key)
@@ -67,7 +67,7 @@ local function default_key2str(prefix, key)
         key = tostring(key)
     end
 
-    if #prefix > 0 then
+    if prefix then
         return prefix .. '.' .. key
     end
     return key
@@ -165,7 +165,7 @@ local function flatten(tbl, maxdepth, encoder, setter, key2str)
         error('key2str must be function', 2)
     end
 
-    return do_flatten(tbl, encoder, setter, key2str, maxdepth, 1, '', {
+    return do_flatten(tbl, encoder, setter, key2str, maxdepth, 1, nil, {
         [tbl] = true,
     }, {})
 end
